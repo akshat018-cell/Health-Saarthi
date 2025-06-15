@@ -38,32 +38,62 @@ Check out the live version here:
 
 ## 📦 Getting Started
 
-```bash
-# Clone the repository
-git clone https://github.com/akshat018-cell/Health-Saarthi.git
-cd Health-Saarthi
+1. **Clone the repository:**
+   ```bash
+   git clone https://github.com/Somil-Jain24/tute.git
+   cd tute
+   ```
 
-# Install dependencies
-npm install
+2. **Install dependencies:**
+   ```bash
+   npm install
+   ```
 
-# Start development server
-npm run dev
+3. **Start the development server:**
+   ```bash
+   npm start
+   ```
 
-Open http://localhost:3000 in your browser.
+4. **Open in your browser:**  
+   Visit `http://localhost:3000` (or as specified in your setup).
 
-🧰 Tech Stack
+---
 
-    Frontend: React.js + Tailwind CSS + Shadcn/UI
+## 🧑‍💻 Tech Stack
 
-    AI: Google Gemini Pro API
+- React.js (or your chosen frontend framework)
+- Gemini AI (for chatbot)
+- Google Translate API (for multilingual support)
+- Google Maps API (for location and doctor discovery)
+- Node.js / Firebase / Supabase (for backend & data storage)
+- Netlify (for deployment)
 
-    Language Translation: Google Translate API
+---
 
-    Maps & Location: Google Maps API
+## 🤝 Contributing
 
-    Auth & DB: Firebase / Supabase
+Contributions are welcome!  
+1. Fork the repo  
+2. Create your feature branch (`git checkout -b feature/YourFeature`)  
+3. Commit your changes (`git commit -m 'Add some feature'`)  
+4. Push to the branch (`git push origin feature/YourFeature`)  
+5. Open a Pull Request
 
-    Deployment: Netlify
+---
+
+## 📄 License
+
+This project is licensed under the MIT License.
+
+---
+
+## 🙌 Acknowledgements
+
+- [Google Maps Platform](https://developers.google.com/maps)
+- [Gemini AI](https://ai.google.dev/)
+- [Netlify](https://www.netlify.com/)
+
+---
 
 💬 Let's Connect
 
@@ -71,3 +101,5 @@ Open http://localhost:3000 in your browser.
 🔗 www.linkedin.com/in/akshat-khandelwal-086627290
 
 Built with ❤️ to empower rural India with accessible AI healthcare.
+
+---
