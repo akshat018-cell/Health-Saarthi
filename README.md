@@ -1,73 +1,104 @@
-# Welcome to your Lovable project
+# HealthSaarthi – AI-Based Rural Health Companion
 
-## Project info
+[Live Demo on Netlify](https://tutedemo.netlify.app/)  
+[GitHub Repository](https://github.com/Somil-Jain24/tute.git)
 
-**URL**: https://lovable.dev/projects/767c0a06-b9a4-40db-ab3a-1a1c818c4bea
+---
 
-## How can I edit this code?
+## 🚀 Overview
 
-There are several ways of editing your application.
+**HealthSaarthi** is an AI-powered health companion app designed for rural and semi-urban India. It provides voice-based health consultations, doctor and hospital discovery, emergency SOS, and special modules for nutrition and women’s health. The app supports both English and Hindi, making healthcare accessible and user-friendly for all.
 
-**Use Lovable**
+---
 
-Simply visit the [Lovable Project](https://lovable.dev/projects/767c0a06-b9a4-40db-ab3a-1a1c818c4bea) and start prompting.
+## 🛠️ Features
 
-Changes made via Lovable will be committed automatically to this repo.
+- **Voice & Vernacular AI Chatbot:** Get health advice in English or Hindi using natural language.
+- **Nearby Doctor & Hospital Discovery:** Find verified healthcare providers with ratings and directions.
+- **Emergency SOS:** Instantly send your location to family or call for help.
+- **Nutrition & Women’s Health Modules:** Specialized advice for nutrition and women’s health needs.
+- **Secure Data Storage:** All user data is stored securely and privately.
+- **User-Friendly Interface:** Simple, animated, and accessible design for all users.
 
-**Use your preferred IDE**
+---
 
-If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
+## 👥 Team
 
-The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
+- Shreyansh Sharma
+- Somil Jain
+- Aditya Kumrawat
+- Akshat Khandelwal
 
-Follow these steps:
+---
 
-```sh
-# Step 1: Clone the repository using the project's Git URL.
-git clone <YOUR_GIT_URL>
+## 🌐 Live Demo
 
-# Step 2: Navigate to the project directory.
-cd <YOUR_PROJECT_NAME>
+Check out the live app here:  
+👉 [https://tutedemo.netlify.app/](https://tutedemo.netlify.app/)
 
-# Step 3: Install the necessary dependencies.
-npm i
+---
 
-# Step 4: Start the development server with auto-reloading and an instant preview.
-npm run dev
-```
+## 📦 Getting Started
 
-**Edit a file directly in GitHub**
+1. **Clone the repository:**
+   ```bash
+   git clone https://github.com/Somil-Jain24/tute.git
+   cd tute
+   ```
 
-- Navigate to the desired file(s).
-- Click the "Edit" button (pencil icon) at the top right of the file view.
-- Make your changes and commit the changes.
+2. **Install dependencies:**
+   ```bash
+   npm install
+   ```
 
-**Use GitHub Codespaces**
+3. **Start the development server:**
+   ```bash
+   npm start
+   ```
 
-- Navigate to the main page of your repository.
-- Click on the "Code" button (green button) near the top right.
-- Select the "Codespaces" tab.
-- Click on "New codespace" to launch a new Codespace environment.
-- Edit files directly within the Codespace and commit and push your changes once you're done.
+4. **Open in your browser:**  
+   Visit `http://localhost:3000` (or as specified in your setup).
 
-## What technologies are used for this project?
+---
 
-This project is built with:
+## 🧑‍💻 Tech Stack
 
-- Vite
-- TypeScript
-- React
-- shadcn-ui
-- Tailwind CSS
+- React.js (or your chosen frontend framework)
+- Gemini AI (for chatbot)
+- Google Translate API (for multilingual support)
+- Google Maps API (for location and doctor discovery)
+- Node.js / Firebase / Supabase (for backend & data storage)
+- Netlify (for deployment)
 
-## How can I deploy this project?
+---
 
-Simply open [Lovable](https://lovable.dev/projects/767c0a06-b9a4-40db-ab3a-1a1c818c4bea) and click on Share -> Publish.
+## 🤝 Contributing
 
-## Can I connect a custom domain to my Lovable project?
+Contributions are welcome!  
+1. Fork the repo  
+2. Create your feature branch (`git checkout -b feature/YourFeature`)  
+3. Commit your changes (`git commit -m 'Add some feature'`)  
+4. Push to the branch (`git push origin feature/YourFeature`)  
+5. Open a Pull Request
 
-Yes, you can!
+---
 
-To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
+## 📄 License
 
-Read more here: [Setting up a custom domain](https://docs.lovable.dev/tips-tricks/custom-domain#step-by-step-guide)
+This project is licensed under the MIT License.
+
+---
+
+## 🙌 Acknowledgements
+
+- [Google Maps Platform](https://developers.google.com/maps)
+- [Gemini AI](https://ai.google.dev/)
+- [Netlify](https://www.netlify.com/)
+
+---
+
+**For any queries or feedback, please open an issue or contact the maintainers.**
+
+---
+
+**Made with ❤️ for rural healthcare innovation.**
