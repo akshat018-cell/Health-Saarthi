@@ -1,756 +1,691 @@
-import React from 'react';
-import { useUserData } from '@/context/UserDataContext';
-import { 
-  ArrowLeft, 
-  ArrowRight, 
-  Check, 
-  HelpCircle,
-  AlertTriangle
-} from 'lucide-react';
-import { Card, CardContent } from '@/components/ui/card';
+import React, { useState } from "react";
+import { Button } from "@/components/ui/button";
+import {
+  ChartContainer,
+  ChartLegendContent,
+  ChartTooltipContent,
+} from "@/components/ui/chart";
+import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell } from "recharts";
+import { BarChart as ChartBar } from "lucide-react";
+import jsPDF from "jspdf";
 
-const ASSESSMENT_SECTIONS = {
-  english: [
-    {
-      id: 'intro',
-      title: 'Mental Health Assessment',
-      description: 'This assessment will help us understand your current mental health status. It takes about 5-10 minutes to complete. Your answers are confidential and will be used to provide personalized recommendations.',
-      type: 'intro'
-    },
-    {
-      id: 'anxiety',
-      title: 'Anxiety Assessment',
-      description: 'The following questions relate to anxiety symptoms you may have experienced in the past two weeks.',
-      questions: [
-        {
-          id: 'anxiety_1',
-          text: 'How often have you been feeling nervous, anxious, or on edge?',
-          type: 'scale'
-        },
-        {
-          id: 'anxiety_2',
-          text: 'How often have you not been able to stop or control worrying?',
-          type: 'scale'
-        },
-        {
-          id: 'anxiety_3',
-          text: 'How often have you had trouble relaxing?',
-          type: 'scale'
-        }
-      ]
-    },
-    {
-      id: 'depression',
-      title: 'Depression Assessment',
-      description: 'The following questions relate to depressive symptoms you may have experienced in the past two weeks.',
-      questions: [
-        {
-          id: 'depression_1',
-          text: 'How often have you had little interest or pleasure in doing things?',
-          type: 'scale'
-        },
-        {
-          id: 'depression_2',
-          text: 'How often have you been feeling down, depressed, or hopeless?',
-          type: 'scale'
-        },
-        {
-          id: 'depression_3',
-          text: 'How often have you had trouble falling or staying asleep, or sleeping too much?',
-          type: 'scale'
-        }
-      ]
-    },
-    {
-      id: 'stress',
-      title: 'Stress Assessment',
-      description: 'The following questions relate to stress levels you may have experienced in the past two weeks.',
-      questions: [
-        {
-          id: 'stress_1',
-          text: 'How often have you found it difficult to cope with all the things you had to do?',
-          type: 'scale'
-        },
-        {
-          id: 'stress_2',
-          text: 'How often have you felt irritable or angry?',
-          type: 'scale'
-        },
-        {
-          id: 'stress_3',
-          text: 'How often have you felt overwhelmed?',
-          type: 'scale'
-        }
-      ]
-    },
-    {
-      id: 'sleep',
-      title: 'Sleep Patterns',
-      description: 'The following questions relate to your sleep patterns over the past two weeks.',
-      questions: [
-        {
-          id: 'sleep_1',
-          text: 'How would you rate your overall sleep quality?',
-          type: 'scale'
-        },
-        {
-          id: 'sleep_2',
-          text: 'How often have you had trouble falling asleep or staying asleep?',
-          type: 'scale',
-          inverted: true
-        },
-        {
-          id: 'sleep_3',
-          text: 'How rested do you feel when you wake up in the morning?',
-          type: 'scale'
-        }
-      ]
-    },
-    {
-      id: 'social',
-      title: 'Social Relationships',
-      description: 'The following questions relate to your social relationships and support system.',
-      questions: [
-        {
-          id: 'social_1',
-          text: 'How satisfied are you with your relationships with friends and family?',
-          type: 'scale'
-        },
-        {
-          id: 'social_2',
-          text: 'How often do you feel lonely or isolated?',
-          type: 'scale',
-          inverted: true
-        },
-        {
-          id: 'social_3',
-          text: 'How comfortable do you feel reaching out for support when needed?',
-          type: 'scale'
-        }
-      ]
-    },
-    {
-      id: 'emergency',
-      title: 'Crisis Assessment',
-      description: 'These questions help us determine if you need immediate support. Please answer honestly.',
-      questions: [
-        {
-          id: 'emergency_1',
-          text: 'In the past two weeks, have you had thoughts that you would be better off dead or of hurting yourself in some way?',
-          type: 'boolean'
-        },
-        {
-          id: 'emergency_2',
-          text: 'Do you currently have a plan to harm yourself or end your life?',
-          type: 'boolean'
-        }
-      ]
-    },
-    {
-      id: 'completion',
-      title: 'Assessment Complete',
-      description: 'Thank you for completing the assessment. Your responses will help us provide personalized recommendations for your mental health journey.',
-      type: 'completion'
-    }
+// Expanded Question Bank
+const QUESTION_BANK = {
+  SKIN: [
+    "Rate your skin itching level.",
+    "How often do you have skin redness?",
+    "How severe is your skin scaling/flaking?",
+    "How much burning sensation do you feel?",
+    "Do you have oozing or discharge?",
+    "How thickened is your skin in patches?",
+    "Do you have cracks or fissures?",
+    "Rate acne or pimples severity.",
+    "Do you have visible skin lesions?",
+    "Rate blackheads/whiteheads presence.",
   ],
-  hindi: [
-    {
-      id: 'intro',
-      title: 'मानसिक स्वास्थ्य मूल्यांकन',
-      description: 'यह मूल्यांकन आपके वर्तमान मानसिक स्वास्थ्य की स्थिति को समझने में हमारी मदद करेगा। इसे पूरा करने में लगभग 5-10 मिनट लगेंगे। आपके उत्तर गोपनीय हैं और व्यक्तिगत सिफारिशें प्रदान करने के लिए उपयोग किए जाएंगे।',
-      type: 'intro'
-    },
-    {
-      id: 'anxiety',
-      title: 'चिंता मूल्यांकन',
-      description: 'निम्नलिखित प्रश्न पिछले दो सप्ताह में आपके द्वारा अनुभव किए गए चिंता के लक्षणों से संबंधित हैं।',
-      questions: [
-        {
-          id: 'anxiety_1',
-          text: 'आप कितनी बार घबराए हुए, चिंतित या तनावग्रस्त महसूस करते हैं?',
-          type: 'scale'
-        },
-        {
-          id: 'anxiety_2',
-          text: 'आप कितनी बार चिंता को रोकने या नियंत्रित करने में असमर्थ रहे हैं?',
-          type: 'scale'
-        },
-        {
-          id: 'anxiety_3',
-          text: 'आप कितनी बार आराम करने में परेशानी महसूस करते हैं?',
-          type: 'scale'
-        }
-      ]
-    },
-    {
-      id: 'depression',
-      title: 'अवसाद मूल्यांकन',
-      description: 'निम्नलिखित प्रश्न पिछले दो सप्ताह में आपके द्वारा अनुभव किए गए अवसाद के लक्षणों से संबंधित हैं।',
-      questions: [
-        {
-          id: 'depression_1',
-          text: 'आप कितनी बार चीजों में रुचि या आनंद महसूस करने में कमी महसूस करते हैं?',
-          type: 'scale'
-        },
-        {
-          id: 'depression_2',
-          text: 'आप कितनी बार उदास, निराश या निराशाजनक महसूस करते हैं?',
-          type: 'scale'
-        },
-        {
-          id: 'depression_3',
-          text: 'आप कितनी बार सोने में या सोते रहने में परेशानी महसूस करते हैं, या बहुत अधिक सोते हैं?',
-          type: 'scale'
-        }
-      ]
-    },
-    {
-      id: 'stress',
-      title: 'तनाव मूल्यांकन',
-      description: 'निम्नलिखित प्रश्न पिछले दो सप्ताह में आपके द्वारा अनुभव किए गए तनाव के स्तर से संबंधित हैं।',
-      questions: [
-        {
-          id: 'stress_1',
-          text: 'आप कितनी बार अपने सभी कार्यों को संभालने में कठिनाई महसूस करते हैं?',
-          type: 'scale'
-        },
-        {
-          id: 'stress_2',
-          text: 'आप कितनी बार चिड़चिड़े या क्रोधित महसूस करते हैं?',
-          type: 'scale'
-        },
-        {
-          id: 'stress_3',
-          text: 'आप कितनी बार अभिभूत महसूस करते हैं?',
-          type: 'scale'
-        }
-      ]
-    },
-    {
-      id: 'sleep',
-      title: 'नींद के पैटर्न',
-      description: 'निम्नलिखित प्रश्न पिछले दो सप्ताह में आपकी नींद के पैटर्न से संबंधित हैं।',
-      questions: [
-        {
-          id: 'sleep_1',
-          text: 'आप अपनी समग्र नींद की गुणवत्ता को कैसे आंकते हैं?',
-          type: 'scale'
-        },
-        {
-          id: 'sleep_2',
-          text: 'आप कितनी बार सोने में या सोते रहने में परेशानी महसूस करते हैं?',
-          type: 'scale',
-          inverted: true
-        },
-        {
-          id: 'sleep_3',
-          text: 'सुबह उठने पर आप कितना आराम महसूस करते हैं?',
-          type: 'scale'
-        }
-      ]
-    },
-    {
-      id: 'social',
-      title: 'सामाजिक संबंध',
-      description: 'निम्नलिखित प्रश्न आपके सामाजिक संबंधों और सहायता प्रणाली से संबंधित हैं।',
-      questions: [
-        {
-          id: 'social_1',
-          text: 'आप अपने दोस्तों और परिवार के साथ संबंधों से कितने संतुष्ट हैं?',
-          type: 'scale'
-        },
-        {
-          id: 'social_2',
-          text: 'आप कितनी बार अकेला या अलग-थलग महसूस करते हैं?',
-          type: 'scale',
-          inverted: true
-        },
-        {
-          id: 'social_3',
-          text: 'जरूरत पड़ने पर सहायता मांगने में आप कितना सहज महसूस करते हैं?',
-          type: 'scale'
-        }
-      ]
-    },
-    {
-      id: 'emergency',
-      title: 'संकट मूल्यांकन',
-      description: 'ये प्रश्न हमें यह निर्धारित करने में मदद करते हैं कि क्या आपको तत्काल सहायता की आवश्यकता है। कृपया ईमानदारी से उत्तर दें।',
-      questions: [
-        {
-          id: 'emergency_1',
-          text: 'पिछले दो सप्ताह में, क्या आपके मन में यह विचार आया है कि आप मर जाएं या खुद को नुकसान पहुंचाएं?',
-          type: 'boolean'
-        },
-        {
-          id: 'emergency_2',
-          text: 'क्या आपके पास वर्तमान में खुद को नुकसान पहुंचाने या जीवन समाप्त करने की योजना है?',
-          type: 'boolean'
-        }
-      ]
-    },
-    {
-      id: 'completion',
-      title: 'मूल्यांकन पूर्ण',
-      description: 'मूल्यांकन पूरा करने के लिए धन्यवाद। आपके उत्तर हमें आपकी मानसिक स्वास्थ्य यात्रा के लिए व्यक्तिगत सिफारिशें प्रदान करने में मदद करेंगे।',
-      type: 'completion'
-    }
+  CHEST: [
+    "Rate chest tightness.",
+    "How often do you feel breathless?",
+    "How severe is your cough?",
+    "Do you have chest pain during activity?",
+    "Rate wheezing sound when breathing.",
+    "Do you have mucus production?",
+    "Do you feel fatigue after small effort?",
+    "Rate night-time breathing issues.",
+    "How often do you wake gasping?",
+    "Do you have palpitations?",
+  ],
+  ABDOMEN: [
+    "Rate stomach pain.",
+    "Do you feel bloated?",
+    "How often do you feel nausea?",
+    "Rate frequency of loose stools.",
+    "Do you have heartburn?",
+    "Rate abdominal cramps.",
+    "Do you feel constipated?",
+    "Rate vomiting episodes.",
+    "Do you pass blood in stools?",
+    "Do you have loss of appetite?",
+  ],
+  NEURO: [
+    "Rate headache severity.",
+    "Do you feel dizzy often?",
+    "Do you have vision disturbances?",
+    "Do you have sudden weakness?",
+    "Do you have limb numbness?",
+    "Rate frequency of seizures.",
+    "Do you have memory loss?",
+    "Do you have light/sound sensitivity?",
+    "Do you feel imbalance?",
+    "Have you had loss of consciousness?",
+  ],
+  URINARY: [
+    "Rate burning during urination.",
+    "How frequent is urination?",
+    "Do you have difficulty starting urination?",
+    "Rate urgency to urinate.",
+    "Do you pass blood in urine?",
+    "Do you have flank pain?",
+    "Rate incomplete bladder emptying.",
+    "Do you wake at night to urinate?",
+    "Do you have fever with urinary symptoms?",
+    "Do you feel lower abdominal heaviness?",
+  ],
+  EYE: [
+    "Rate eye redness.",
+    "Do your eyes itch?",
+    "Rate eye dryness.",
+    "Do you have light sensitivity?",
+    "Is your vision blurry?",
+    "Rate eye pain.",
+    "Do you have eye discharge?",
+    "Do you feel eye pressure?",
+    "Do you see halos around lights?",
+    "Rate frequency of watery eyes.",
+  ],
+  EAR: [
+    "Rate ear pain.",
+    "Do you have ear discharge?",
+    "Do you hear ringing (tinnitus)?",
+    "Do you feel ear fullness?",
+    "Rate hearing loss.",
+    "Do you feel ear itching?",
+    "Do you feel dizzy?",
+    "Do you have balance issues?",
+    "Rate sensitivity to loud sounds.",
+    "Do you feel popping in ears?",
+  ],
+  MUSCULOSKELETAL: [
+    "Rate joint pain.",
+    "Do you have joint stiffness?",
+    "Rate swelling in joints.",
+    "Do you have back pain?",
+    "Do you have muscle weakness?",
+    "Rate joint redness.",
+    "Do you feel cracking sounds?",
+    "Rate difficulty walking.",
+    "Rate bone pain.",
+    "Do you feel sudden muscle cramps?",
+  ],
+  ENT: [
+    "Rate nasal congestion.",
+    "Do you have runny nose?",
+    "Rate sneezing episodes.",
+    "Do you have facial pain/pressure?",
+    "Do you have sore throat?",
+    "Rate difficulty swallowing.",
+    "Do you have hoarseness?",
+    "Do you have postnasal drip?",
+    "Rate sense of smell loss.",
+    "Do you feel throat lump sensation?",
+  ],
+  CARDIOVASCULAR: [
+    "Rate chest pain.",
+    "Do you feel breathless on exertion?",
+    "Do you have swelling in feet?",
+    "Rate palpitations.",
+    "Do you feel dizzy on standing?",
+    "Rate fatigue.",
+    "Do you have cold extremities?",
+    "Rate bluish lips/fingers.",
+    "Do you feel skipped heartbeats?",
+    "Do you have sudden sweating episodes?",
+  ],
+  MISCELLANEOUS: [
+    "Rate general fatigue.",
+    "Do you feel weak?",
+    "Rate dizziness.",
+    "Do you feel depressed?",
+    "Rate unexplained weight loss.",
+    "Do you feel cold easily?",
+    "Do you have dry skin?",
+    "Rate hair loss.",
+    "Do you feel anxious?",
+    "Do you have excessive thirst?",
+  ],
+  GYNECOLOGICAL: [
+    "Rate menstrual pain.",
+    "Do you have irregular periods?",
+    "Rate heavy bleeding.",
+    "Do you have pelvic pain?",
+    "Do you have facial hair growth?",
+    "Rate acne severity.",
+    "Do you feel bloated?",
+    "Rate breast tenderness.",
+    "Do you feel fatigue around periods?",
+    "Do you have mood swings?",
   ]
 };
 
-const SCALE_LABELS = {
-  english: {
-    1: 'Not at all',
-    2: 'Rarely',
-    3: 'Sometimes',
-    4: 'Often',
-    5: 'Very frequently',
-    6: 'Almost constantly',
-    7: 'Constantly',
-    8: 'Severely',
-    9: 'Extremely',
-    10: 'Completely'
-  },
-  hindi: {
-    1: 'बिल्कुल नहीं',
-    2: 'कभी-कभी',
-    3: 'कभी-कभार',
-    4: 'अक्सर',
-    5: 'बहुत अधिक',
-    6: 'लगभग हमेशा',
-    7: 'हमेशा',
-    8: 'गंभीर रूप से',
-    9: 'अत्यधिक',
-    10: 'पूरी तरह से'
-  }
+type CategoryKey = keyof typeof QUESTION_BANK;
+
+const DISEASES: Record<CategoryKey, {
+  name: string;
+  scoring: (a: number[]) => number;
+  thresholds: { unlikely: number; mild: number; moderate: number; severe: number };
+}[]> = {
+  SKIN: [
+    {
+      name: "Eczema",
+      scoring: (a) =>
+        (a[0]*2)+(a[2]*1.5)+(a[5]*2)+(a[1]*1.5)+(a[4]*1)+(a[3]*1),
+      thresholds: { unlikely: 0, mild: 21, moderate: 36, severe: 51 }
+    },
+    {
+      name: "Psoriasis",
+      scoring: (a) =>
+        (a[2]*2)+(a[1]*2)+(a[5]*2),
+      thresholds: { unlikely: 0, mild: 21, moderate: 36, severe: 51 }
+    },
+    {
+      name: "Acne",
+      scoring: (a) =>
+        (a[7]*2)+(a[9]*2)+(a[1]*1)+(a[3]*1),
+      thresholds: { unlikely: 0, mild: 21, moderate: 36, severe: 51 }
+    },
+  ],
+  CHEST: [
+    {
+      name: "Asthma",
+      scoring: (a) =>
+        (a[4]*1)+(a[1]*2)+(a[7]*1)+(a[0]*1.5),
+      thresholds: { unlikely: 0, mild: 21, moderate: 36, severe: 51 }
+    },
+    {
+      name: "Angina",
+      scoring: (a) =>
+        (a[0]*2)+(a[3]*1.5)+(a[1]*1.5)+(a[9]*1),
+      thresholds: { unlikely: 0, mild: 21, moderate: 36, severe: 51 }
+    },
+    {
+      name: "Bronchitis",
+      scoring: (a) =>
+        (a[4]*2)+(a[5]*2)+(a[6]*1),
+      thresholds: { unlikely: 0, mild: 21, moderate: 36, severe: 51 }
+    },
+  ],
+  ABDOMEN: [
+    {
+      name: "Gastritis",
+      scoring: (a) =>
+        (a[0]*2)+(a[8]*1)+(a[1]*1)+(a[6]*1),
+      thresholds: { unlikely: 0, mild: 21, moderate: 36, severe: 51 }
+    },
+    {
+      name: "IBS",
+      scoring: (a) =>
+        (a[3]*1)+(a[4]*2)+(a[5]*1),
+      thresholds: { unlikely: 0, mild: 21, moderate: 36, severe: 51 }
+    },
+    {
+      name: "Gastroenteritis",
+      scoring: (a) =>
+        (a[0]*1)+(a[4]*2)+(a[2]*2),
+      thresholds: { unlikely: 0, mild: 21, moderate: 36, severe: 51 }
+    },
+  ],
+  NEURO: [
+    {
+      name: "Migraine",
+      scoring: (a) =>
+        (a[0]*2)+(a[7]*1)+(a[1]*1),
+      thresholds: { unlikely: 0, mild: 21, moderate: 36, severe: 51 }
+    },
+    {
+      name: "Stroke",
+      scoring: (a) =>
+        (a[4]*2)+(a[6]*1)+(a[7]*1)+(a[9]*1),
+      thresholds: { unlikely: 0, mild: 21, moderate: 36, severe: 51 }
+    },
+    {
+      name: "Epilepsy",
+      scoring: (a) =>
+        (a[5]*2)+(a[1]*1)+(a[3]*1),
+      thresholds: { unlikely: 0, mild: 21, moderate: 36, severe: 51 }
+    },
+  ],
+  URINARY: [
+    {
+      name: "UTI",
+      scoring: (a) =>
+        (a[0]*2)+(a[1]*2)+(a[4]*2)+(a[8]*1),
+      thresholds: { unlikely: 0, mild: 21, moderate: 36, severe: 51 }
+    },
+    {
+      name: "BPH",
+      scoring: (a) =>
+        (a[2]*1)+(a[6]*1)+(a[5]*1)+(a[0]*1),
+      thresholds: { unlikely: 0, mild: 21, moderate: 36, severe: 51 }
+    },
+    {
+      name: "Kidney Stone",
+      scoring: (a) =>
+        (a[4]*2)+(a[5]*1.5)+(a[8]*1),
+      thresholds: { unlikely: 0, mild: 21, moderate: 36, severe: 51 }
+    },
+  ],
+  EYE: [
+    {
+      name: "Conjunctivitis",
+      scoring: (a) =>
+        (a[0]*2)+(a[1]*1.5)+(a[4]*1),
+      thresholds: { unlikely: 0, mild: 21, moderate: 36, severe: 51 }
+    },
+    {
+      name: "Dry Eye",
+      scoring: (a) =>
+        (a[2]*2)+(a[3]*1.5)+(a[6]*1),
+      thresholds: { unlikely: 0, mild: 21, moderate: 36, severe: 51 }
+    },
+    {
+      name: "Glaucoma",
+      scoring: (a) =>
+        (a[5]*2)+(a[8]*1)+(a[7]*1),
+      thresholds: { unlikely: 0, mild: 21, moderate: 36, severe: 51 }
+    },
+  ],
+  EAR: [
+    {
+      name: "Otitis",
+      scoring: (a) =>
+        (a[0]*2)+(a[1]*2)+(a[4]*1),
+      thresholds: { unlikely: 0, mild: 21, moderate: 36, severe: 51 }
+    },
+    {
+      name: "Tinnitus",
+      scoring: (a) =>
+        (a[2]*2)+(a[3]*1)+(a[6]*1),
+      thresholds: { unlikely: 0, mild: 21, moderate: 36, severe: 51 }
+    },
+    {
+      name: "Hearing Loss",
+      scoring: (a) =>
+        (a[4]*2)+(a[5]*1)+(a[7]*1),
+      thresholds: { unlikely: 0, mild: 21, moderate: 36, severe: 51 }
+    },
+  ],
+  MUSCULOSKELETAL: [
+    {
+      name: "Arthritis",
+      scoring: (a) =>
+        (a[0]*2)+(a[1]*1)+(a[2]*1)+(a[4]*1),
+      thresholds: { unlikely: 0, mild: 21, moderate: 36, severe: 51 }
+    },
+    {
+      name: "Sprain",
+      scoring: (a) =>
+        (a[3]*2)+(a[5]*1)+(a[6]*1),
+      thresholds: { unlikely: 0, mild: 21, moderate: 36, severe: 51 }
+    },
+    {
+      name: "Osteoporosis",
+      scoring: (a) =>
+        (a[7]*2)+(a[8]*1)+(a[9]*1),
+      thresholds: { unlikely: 0, mild: 21, moderate: 36, severe: 51 }
+    },
+  ],
+  ENT: [
+    {
+      name: "Sinusitis",
+      scoring: (a) =>
+        (a[0]*2)+(a[1]*1.5)+(a[3]*1),
+      thresholds: { unlikely: 0, mild: 21, moderate: 36, severe: 51 }
+    },
+    {
+      name: "Tonsillitis",
+      scoring: (a) =>
+        (a[4]*2)+(a[5]*1)+(a[6]*1),
+      thresholds: { unlikely: 0, mild: 21, moderate: 36, severe: 51 }
+    },
+    {
+      name: "Allergic Rhinitis",
+      scoring: (a) =>
+        (a[2]*2)+(a[7]*1)+(a[8]*1),
+      thresholds: { unlikely: 0, mild: 21, moderate: 36, severe: 51 }
+    },
+  ],
+  CARDIOVASCULAR: [
+    {
+      name: "Hypertension",
+      scoring: (a) =>
+        (a[0]*2)+(a[1]*1)+(a[2]*1)+(a[3]*1),
+      thresholds: { unlikely: 0, mild: 21, moderate: 36, severe: 51 }
+    },
+    {
+      name: "Heart Failure",
+      scoring: (a) =>
+        (a[4]*2)+(a[5]*1)+(a[6]*1)+(a[7]*1),
+      thresholds: { unlikely: 0, mild: 21, moderate: 36, severe: 51 }
+    },
+    {
+      name: "Arrhythmia",
+      scoring: (a) =>
+        (a[8]*2)+(a[9]*1)+(a[2]*1),
+      thresholds: { unlikely: 0, mild: 21, moderate: 36, severe: 51 }
+    },
+  ],
+  MISCELLANEOUS: [
+    {
+      name: "Fatigue Syndrome",
+      scoring: (a) =>
+        (a[0]*1)+(a[1]*1)+(a[4]*1)+(a[8]*1),
+      thresholds: { unlikely: 0, mild: 21, moderate: 36, severe: 51 }
+    },
+    {
+      name: "Anemia",
+      scoring: (a) =>
+        (a[2]*2)+(a[5]*1)+(a[7]*1),
+      thresholds: { unlikely: 0, mild: 21, moderate: 36, severe: 51 }
+    },
+    {
+      name: "Thyroid",
+      scoring: (a) =>
+        (a[3]*2)+(a[6]*1)+(a[9]*1),
+      thresholds: { unlikely: 0, mild: 21, moderate: 36, severe: 51 }
+    },
+  ],
+  GYNECOLOGICAL: [
+    {
+      name: "PCOS",
+      scoring: (a) =>
+        (a[0]*2)+(a[1]*1.5)+(a[4]*1),
+      thresholds: { unlikely: 0, mild: 21, moderate: 36, severe: 51 }
+    },
+    {
+      name: "Dysmenorrhea",
+      scoring: (a) =>
+        (a[2]*2)+(a[5]*1)+(a[6]*1),
+      thresholds: { unlikely: 0, mild: 21, moderate: 36, severe: 51 }
+    },
+    {
+      name: "Fibroids",
+      scoring: (a) =>
+        (a[3]*2)+(a[7]*1)+(a[8]*1),
+      thresholds: { unlikely: 0, mild: 21, moderate: 36, severe: 51 }
+    },
+  ],
 };
 
-interface AssessmentProps {
-  language?: 'english' | 'hindi';
+function getSeverityLabel(score: number, thresholds: { unlikely: number; mild: number; moderate: number; severe: number }) {
+  if (score >= thresholds.severe) return "Severe";
+  if (score >= thresholds.moderate) return "Moderate";
+  if (score >= thresholds.mild) return "Mild";
+  return "Unlikely";
 }
 
-const Assessment: React.FC<AssessmentProps> = ({ language = 'english' }) => {
-  const { addAssessment } = useUserData();
-  const [currentSectionIndex, setCurrentSectionIndex] = React.useState(0);
-  const [answers, setAnswers] = React.useState<Record<string, number>>({});
-  const [showEmergencyResources, setShowEmergencyResources] = React.useState(false);
-  
-  const currentSection = ASSESSMENT_SECTIONS[language][currentSectionIndex];
-  const scaleLabels = SCALE_LABELS[language];
-  
-  const handleNext = () => {
-    if (currentSectionIndex < ASSESSMENT_SECTIONS[language].length - 1) {
-      // Check for emergency conditions
-      if (currentSection.id === 'emergency') {
-        if (answers['emergency_1'] === 1 || answers['emergency_2'] === 1) {
-          setShowEmergencyResources(true);
-          return;
-        }
-      }
-      
-      setCurrentSectionIndex(currentSectionIndex + 1);
-      window.scrollTo(0, 0);
-    }
+const CATEGORY_LABELS: Record<CategoryKey, string> = {
+  SKIN: "Skin",
+  CHEST: "Chest",
+  ABDOMEN: "Abdomen",
+  NEURO: "Neurological",
+  URINARY: "Urinary",
+  EYE: "Eye",
+  EAR: "Ear",
+  MUSCULOSKELETAL: "Musculoskeletal",
+  ENT: "ENT (Nose+Throat)",
+  CARDIOVASCULAR: "Cardiovascular",
+  MISCELLANEOUS: "Miscellaneous",
+  GYNECOLOGICAL: "Gynecological",
+};
+
+const COLORS = ["#2563eb", "#f59e42", "#ef4444"]; // Blue, orange, red etc.
+
+const MedicalAssessment: React.FC = () => {
+  const [category, setCategory] = useState<CategoryKey>("SKIN");
+  const [answers, setAnswers] = useState<number[]>(Array(10).fill(1));
+  const [results, setResults] = useState<{ name: string; score: number; severity: string }[] | null>(null);
+
+  const handleCategoryChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    setCategory(e.target.value as CategoryKey);
+    setAnswers(Array(10).fill(1));
+    setResults(null);
   };
-  
-  const handlePrevious = () => {
-    if (currentSectionIndex > 0) {
-      setCurrentSectionIndex(currentSectionIndex - 1);
-      window.scrollTo(0, 0);
-    }
+
+  const handleSliderChange = (idx: number, val: number) => {
+    const tmp = [...answers];
+    tmp[idx] = val;
+    setAnswers(tmp);
   };
-  
-  const handleScaleAnswer = (questionId: string, value: number, inverted: boolean = false) => {
-    setAnswers(prev => ({
-      ...prev,
-      [questionId]: inverted ? 11 - value : value
-    }));
-  };
-  
-  const handleBooleanAnswer = (questionId: string, value: boolean) => {
-    setAnswers(prev => ({
-      ...prev,
-      [questionId]: value ? 1 : 0
-    }));
-  };
-  
-  const isCurrentSectionComplete = () => {
-    if (currentSection.type === 'intro' || currentSection.type === 'completion') {
-      return true;
-    }
-    
-    if (!currentSection.questions) {
-      return false;
-    }
-    
-    return currentSection.questions.every(question => 
-      answers[question.id] !== undefined
-    );
-  };
-  
+
   const calculateResults = () => {
-    const anxietyScore = Math.round((
-      (answers['anxiety_1'] || 0) + 
-      (answers['anxiety_2'] || 0) + 
-      (answers['anxiety_3'] || 0)
-    ) / 3);
-    
-    const depressionScore = Math.round((
-      (answers['depression_1'] || 0) + 
-      (answers['depression_2'] || 0) + 
-      (answers['depression_3'] || 0)
-    ) / 3);
-    
-    const stressScore = Math.round((
-      (answers['stress_1'] || 0) + 
-      (answers['stress_2'] || 0) + 
-      (answers['stress_3'] || 0)
-    ) / 3);
-    
-    const sleepScore = Math.round((
-      (answers['sleep_1'] || 0) + 
-      (answers['sleep_2'] || 0) + 
-      (answers['sleep_3'] || 0)
-    ) / 3);
-    
-    const socialScore = Math.round((
-      (answers['social_1'] || 0) + 
-      (answers['social_2'] || 0) + 
-      (answers['social_3'] || 0)
-    ) / 3);
-    
-    const overallScore = Math.round((
-      (11 - anxietyScore) + 
-      (11 - depressionScore) + 
-      (11 - stressScore) + 
-      sleepScore + 
-      socialScore
-    ) / 5);
-    
-    return {
-      anxiety: anxietyScore,
-      depression: depressionScore,
-      stress: stressScore,
-      sleep: sleepScore,
-      social: socialScore,
-      overall: overallScore
-    };
+    const diseases = DISEASES[category];
+    const out = diseases.map((d) => {
+      const score = Math.round(d.scoring(answers));
+      const severity = getSeverityLabel(score, d.thresholds);
+      return { name: d.name, score, severity };
+    });
+    setResults(out);
   };
-  
-  const handleComplete = () => {
-    const results = calculateResults();
-    addAssessment(results);
-    setCurrentSectionIndex(0); // Reset to start
-  };
-  
-  const renderQuestion = (question: any) => {
-    if (question.type === 'scale') {
-      return (
-        <div key={question.id} className="mb-8">
-          <div className="flex justify-between items-center mb-2">
-            <label htmlFor={question.id} className="text-lg font-medium text-neutral-800">
-              {question.text}
-            </label>
-            <button 
-              type="button" 
-              className="text-neutral-500 hover:text-primary-600"
-              title="Learn more about this question"
-            >
-              <HelpCircle className="h-5 w-5" />
-            </button>
-          </div>
-          
-          <div className="mt-2">
-            <div className="flex justify-between mb-1">
-              <span className="text-sm text-neutral-500">Not at all</span>
-              <span className="text-sm text-neutral-500">Severely</span>
-            </div>
-            <div className="flex justify-between space-x-2">
-              {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((value) => (
-                <button
-                  key={value}
-                  type="button"
-                  className={`
-                    flex-1 h-12 rounded-md focus:outline-none transition-all
-                    ${answers[question.id] === (question.inverted ? 11 - value : value)
-                      ? 'bg-primary-600 text-white ring-2 ring-primary-300 ring-offset-2'
-                      : 'bg-neutral-100 hover:bg-neutral-200 text-neutral-700'
-                    }
-                  `}
-                  onClick={() => handleScaleAnswer(question.id, value, question.inverted)}
-                  aria-label={`${scaleLabels[value] || value}`}
-                >
-                  {value}
-                </button>
-              ))}
-            </div>
-            <div className="flex justify-between mt-1">
-              <span className="text-xs text-neutral-500">
-                {scaleLabels[1]}
-              </span>
-              <span className="text-xs text-neutral-500">
-                {scaleLabels[10]}
-              </span>
-            </div>
-          </div>
-        </div>
-      );
-    } else if (question.type === 'boolean') {
-      return (
-        <div key={question.id} className="mb-8">
-          <div className="flex justify-between items-center mb-4">
-            <label className="text-lg font-medium text-neutral-800">
-              {question.text}
-            </label>
-            <button 
-              type="button" 
-              className="text-neutral-500 hover:text-primary-600"
-              title="Learn more about this question"
-            >
-              <HelpCircle className="h-5 w-5" />
-            </button>
-          </div>
-          
-          <div className="flex space-x-4">
-            <button
-              type="button"
-              className={`
-                flex-1 py-3 px-4 rounded-md border focus:outline-none transition-all
-                ${answers[question.id] === 0
-                  ? 'bg-primary-50 border-primary-300 text-primary-700 ring-2 ring-primary-300 ring-offset-2'
-                  : 'bg-white border-neutral-300 text-neutral-700 hover:bg-neutral-50'
-                }
-              `}
-              onClick={() => handleBooleanAnswer(question.id, false)}
-            >
-              No
-            </button>
-            <button
-              type="button"
-              className={`
-                flex-1 py-3 px-4 rounded-md border focus:outline-none transition-all
-                ${answers[question.id] === 1
-                  ? 'bg-primary-50 border-primary-300 text-primary-700 ring-2 ring-primary-300 ring-offset-2'
-                  : 'bg-white border-neutral-300 text-neutral-700 hover:bg-neutral-50'
-                }
-              `}
-              onClick={() => handleBooleanAnswer(question.id, true)}
-            >
-              Yes
-            </button>
-          </div>
-        </div>
-      );
+
+  const allUnlikely = results && results.length > 0 && results.every((r) => r.severity === "Unlikely");
+
+  // Chart config for shadcn/ui chart, icon by disease
+  const chartConfig = results
+    ? results.reduce(
+        (acc, r, idx) => ({
+          ...acc,
+          [r.name]: {
+            label: r.name,
+            icon: ChartBar,
+            color:
+              r.severity === "Severe"
+                ? "#ef4444"
+                : r.severity === "Moderate"
+                ? "#f59e42"
+                : r.severity === "Mild"
+                ? "#2563eb"
+                : "#6b7280", // Unlikely grey
+          },
+        }),
+        {}
+      )
+    : {};
+
+  const chartData = results
+    ? results.map((r) => ({
+        name: r.name,
+        Score: r.score,
+        Severity: r.severity,
+      }))
+    : [];
+
+  const handleDownloadPDF = () => {
+    if (!results) return;
+    const doc = new jsPDF();
+    let y = 10;
+
+    doc.setFontSize(16);
+    doc.text("Medical Assessment Results", 10, y);
+    y += 10;
+
+    doc.setFontSize(12);
+    doc.text(`Category: ${CATEGORY_LABELS[category]}`, 10, y);
+    y += 8;
+
+    doc.setFont("bold");
+    doc.text("Your Answers:", 10, y);
+    doc.setFont("normal");
+    y += 7;
+
+    QUESTION_BANK[category].forEach((q, i) => {
+      doc.text(`${i + 1}. ${q}`, 10, y);
+      doc.text(`Score: ${answers[i]}`, 170, y, { align: "right" });
+      y += 6;
+      if (y > 270) { doc.addPage(); y = 10; }
+    });
+
+    y += 4;
+    doc.setFont("bold");
+    doc.text("Assessment Results:", 10, y);
+    doc.setFont("normal");
+    y += 7;
+
+    results.forEach((r) => {
+      doc.text(`Disease: ${r.name}`, 10, y);
+      doc.text(`Score: ${r.score}`, 80, y);
+      doc.text(`Severity: ${r.severity}`, 130, y);
+      y += 7;
+      if (y > 270) { doc.addPage(); y = 10; }
+    });
+
+    if (results.every((r) => r.severity === "Unlikely")) {
+      y += 7;
+      doc.setTextColor(220, 30, 40);
+      doc.text("No clear match found. Please consult a doctor.", 10, y);
+      doc.setTextColor(0, 0, 0);
     }
-    
-    return null;
+    doc.save("assessment.pdf");
   };
-  
-  const renderEmergencyResources = () => {
-    const resources = {
-      english: {
-        title: 'Important Notice',
-        message: 'Based on your responses, we recommend you speak with someone right away. Here are resources that can help you immediately:',
-        lifeline: 'National Suicide Prevention Lifeline:',
-        crisisText: 'Crisis Text Line:',
-        emergency: 'Emergency Services:',
-        continue: 'You can continue with the assessment, but please reach out for help as soon as possible.',
-        back: 'Back to Assessment',
-        continueButton: 'Continue'
-      },
-      hindi: {
-        title: 'महत्वपूर्ण सूचना',
-        message: 'आपके उत्तरों के आधार पर, हम अनुशंसा करते हैं कि आप तुरंत किसी से बात करें। यहां कुछ संसाधन हैं जो आपकी तुरंत मदद कर सकते हैं:',
-        lifeline: 'राष्ट्रीय आत्महत्या रोकथाम हेल्पलाइन:',
-        crisisText: 'संकट टेक्स्ट लाइन:',
-        emergency: 'आपातकालीन सेवाएं:',
-        continue: 'आप मूल्यांकन जारी रख सकते हैं, लेकिन कृपया जल्द से जल्द मदद लें।',
-        back: 'मूल्यांकन पर वापस जाएं',
-        continueButton: 'जारी रखें'
-      }
-    };
 
-    const t = resources[language];
-
-    return (
-      <div className="slide-up">
-        <div className="bg-error-50 border border-error-100 rounded-lg p-6 mb-8">
-          <div className="flex items-start">
-            <AlertTriangle className="h-6 w-6 text-error-600 mr-3 flex-shrink-0 mt-1" />
-            <div>
-              <h3 className="text-xl font-bold text-error-800 mb-2">{t.title}</h3>
-              <p className="text-error-700 mb-4">{t.message}</p>
-              <ul className="space-y-3 mb-4">
-                <li className="flex items-center">
-                  <span className="bg-white p-2 rounded-full mr-3">
-                    <Check className="h-4 w-4 text-success-600" />
+  return (
+    <div className="max-w-5xl mx-auto bg-card rounded-lg p-8 shadow-md mt-8 mb-12 border">
+      <h1 className="text-2xl font-bold mb-6 text-primary text-center">Medical Assessment</h1>
+      <div className="flex flex-col md:flex-row gap-8">
+        {/* RESULTS LEFT */}
+        <div className="md:w-2/5 order-2 md:order-1">
+          {results && results.length > 0 && (
+            <div className="bg-muted rounded-lg px-6 py-4">
+              <h2 className="text-lg font-bold mb-4 text-primary">Assessment Results:</h2>
+              {results.map((r) => (
+                <div key={r.name} className="mb-3">
+                  <span className="font-semibold">Disease: </span><span>{r.name}</span>
+                  <br />
+                  <span className="font-semibold">Score: </span><span>{r.score}</span>
+                  <br />
+                  <span className="font-semibold">Severity: </span>
+                  <span
+                    className={
+                      r.severity === "Severe"
+                        ? "text-red-500 font-bold"
+                        : r.severity === "Moderate"
+                        ? "text-orange-500 font-bold"
+                        : r.severity === "Mild"
+                        ? "text-blue-600 font-semibold"
+                        : "text-muted-foreground"
+                    }
+                  >
+                    {r.severity}
                   </span>
-                  <span className="text-error-700">
-                    <strong>{t.lifeline}</strong> 988 या 1-800-273-8255
-                  </span>
-                </li>
-                <li className="flex items-center">
-                  <span className="bg-white p-2 rounded-full mr-3">
-                    <Check className="h-4 w-4 text-success-600" />
-                  </span>
-                  <span className="text-error-700">
-                    <strong>{t.crisisText}</strong> HOME को 741741 पर टेक्स्ट करें
-                  </span>
-                </li>
-                <li className="flex items-center">
-                  <span className="bg-white p-2 rounded-full mr-3">
-                    <Check className="h-4 w-4 text-success-600" />
-                  </span>
-                  <span className="text-error-700">
-                    <strong>{t.emergency}</strong> 911 पर कॉल करें या निकटतम आपातकालीन कक्ष में जाएं
-                  </span>
-                </li>
-              </ul>
-              <p className="text-error-700 text-sm">{t.continue}</p>
+                </div>
+              ))}
+              {allUnlikely && (
+                <div className="mt-4 text-center text-destructive font-bold">
+                  No clear match found. Please consult a doctor.
+                </div>
+              )}
+              {/* Download PDF Button */}
+              <div className="mt-6 flex justify-center">
+                <Button variant="outline" onClick={handleDownloadPDF}>
+                  Download PDF
+                </Button>
+              </div>
+              {/* Chart appears here */}
+              {!allUnlikely && results.length > 0 && (
+                <div className="mt-8">
+                  <h3 className="text-md font-semibold mb-2 flex items-center gap-2">
+                    <ChartBar className="text-primary" /> Visual Summary
+                  </h3>
+                  <ChartContainer config={chartConfig}>
+                    <div>
+                      <ResponsiveContainer width="100%" height={180}>
+                        <BarChart
+                          data={chartData}
+                          margin={{ top: 8, right: 16, left: 8, bottom: 8 }}
+                        >
+                          <XAxis dataKey="name" tickLine={false} axisLine={false} />
+                          <YAxis allowDecimals={false} />
+                          <Tooltip
+                            content={
+                              <ChartTooltipContent labelKey="name" />
+                            }
+                          />
+                          <Bar
+                            dataKey="Score"
+                            radius={[8, 8, 0, 0]}
+                            isAnimationActive={false}
+                          >
+                            {chartData.map((entry, idx) => (
+                              <Cell
+                                key={`cell-${entry.name}`}
+                                fill={
+                                  entry.Severity === "Severe"
+                                    ? "#ef4444"
+                                    : entry.Severity === "Moderate"
+                                    ? "#f59e42"
+                                    : entry.Severity === "Mild"
+                                    ? "#2563eb"
+                                    : "#6b7280"
+                                }
+                              />
+                            ))}
+                          </Bar>
+                        </BarChart>
+                      </ResponsiveContainer>
+                      <ChartLegendContent payload={chartData.map((r, i) => ({
+                        value: r.name,
+                        type: "rect",
+                        color:
+                          r.Severity === "Severe"
+                            ? "#ef4444"
+                            : r.Severity === "Moderate"
+                            ? "#f59e42"
+                            : r.Severity === "Mild"
+                            ? "#2563eb"
+                            : "#6b7280",
+                        dataKey: r.name,
+                      }))} />
+                    </div>
+                  </ChartContainer>
+                </div>
+              )}
             </div>
-          </div>
+          )}
         </div>
-        <div className="flex justify-between mt-8">
-          <button
-            type="button"
-            className="btn btn-outline"
-            onClick={() => setShowEmergencyResources(false)}
-          >
-            {t.back}
-          </button>
-          <button
-            type="button"
-            className="btn btn-primary"
-            onClick={handleNext}
-          >
-            {t.continueButton}
-          </button>
+        {/* FORM/QUESTIONS RIGHT */}
+        <div className="md:w-3/5 order-1 md:order-2">
+          <div className="mb-6 flex flex-col items-center">
+            <label className="font-semibold mb-2">
+              Select Category:
+              <select
+                value={category}
+                onChange={handleCategoryChange}
+                className="ml-2 px-3 py-2 rounded border bg-background shadow"
+              >
+                {Object.entries(CATEGORY_LABELS).map(([key, label]) => (
+                  <option key={key} value={key}>{label}</option>
+                ))}
+              </select>
+            </label>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-5 mb-8">
+            {QUESTION_BANK[category].map((q, i) => (
+              <div key={i} className="mb-2">
+                <span className="font-medium">{i + 1}. {q}</span>
+                <div className="flex items-center space-x-2 mt-2">
+                  <input
+                    type="range"
+                    min={1}
+                    max={10}
+                    value={answers[i]}
+                    onChange={e => handleSliderChange(i, Number(e.target.value))}
+                    className="flex-1 accent-primary"
+                  />
+                  <span className="inline-block w-8 text-center bg-secondary rounded px-1">
+                    {answers[i]}
+                  </span>
+                </div>
+              </div>
+            ))}
+          </div>
+          <div className="text-center mb-6">
+            <Button size="lg" className="px-8 py-2" onClick={calculateResults}>
+              Calculate Assessment
+            </Button>
+          </div>
         </div>
       </div>
-    );
-  };
-  
-  if (showEmergencyResources) {
-    return (
-      <Card className="glass-card border-white/10 rounded-2xl shadow-lg-glass">
-        <CardContent className="p-6">
-          {renderEmergencyResources()}
-        </CardContent>
-      </Card>
-    );
-  }
-  
-  return (
-    <Card className="glass-card border-white/10 rounded-2xl shadow-lg-glass">
-      <CardContent className="p-6">
-        <div className="slide-up max-w-2xl mx-auto">
-          <div className="mb-8">
-            {/* Progress bar */}
-            <div className="w-full bg-neutral-100 rounded-full h-2.5 mb-6">
-              <div 
-                className="bg-primary-600 h-2.5 rounded-full transition-all duration-500" 
-                style={{ width: `${(currentSectionIndex / (ASSESSMENT_SECTIONS[language].length - 1)) * 100}%` }}
-              ></div>
-            </div>
-            
-            <h1 className="text-2xl md:text-3xl font-bold text-neutral-900 mb-2">{currentSection.title}</h1>
-            <p className="text-neutral-600">{currentSection.description}</p>
-          </div>
-          
-          {currentSection.type === 'intro' && (
-            <div className="card p-6 mb-8">
-              <h3 className="text-lg font-medium text-neutral-800 mb-4">Before you begin:</h3>
-              <ul className="space-y-3">
-                <li className="flex items-start">
-                  <span className="bg-primary-50 p-1 rounded-full mr-3 mt-0.5">
-                    <Check className="h-4 w-4 text-primary-600" />
-                  </span>
-                  <span className="text-neutral-600">
-                    Find a quiet place where you can focus without interruptions.
-                  </span>
-                </li>
-                <li className="flex items-start">
-                  <span className="bg-primary-50 p-1 rounded-full mr-3 mt-0.5">
-                    <Check className="h-4 w-4 text-primary-600" />
-                  </span>
-                  <span className="text-neutral-600">
-                    Answer honestly - there are no right or wrong answers.
-                  </span>
-                </li>
-                <li className="flex items-start">
-                  <span className="bg-primary-50 p-1 rounded-full mr-3 mt-0.5">
-                    <Check className="h-4 w-4 text-primary-600" />
-                  </span>
-                  <span className="text-neutral-600">
-                    Consider how you've felt over the past two weeks, not just today.
-                  </span>
-                </li>
-                <li className="flex items-start">
-                  <span className="bg-primary-50 p-1 rounded-full mr-3 mt-0.5">
-                    <Check className="h-4 w-4 text-primary-600" />
-                  </span>
-                  <span className="text-neutral-600">
-                    Your responses are confidential and will only be used to provide personalized recommendations.
-                  </span>
-                </li>
-              </ul>
-            </div>
-          )}
-          
-          {currentSection.type === 'completion' && (
-            <div className="text-center py-8">
-              <div className="inline-flex items-center justify-center w-20 h-20 bg-primary-50 rounded-full mb-6">
-                <Check className="h-10 w-10 text-primary-600" />
-              </div>
-              <h2 className="text-2xl font-bold text-neutral-900 mb-4">
-                Thank You for Completing the Assessment
-              </h2>
-              <p className="text-neutral-600 mb-8 max-w-md mx-auto">
-                Your responses have been recorded. We've created a personalized dashboard 
-                with insights and recommendations based on your assessment.
-              </p>
-              <button
-                type="button"
-                className="btn btn-primary px-8 py-3"
-                onClick={handleComplete}
-              >
-                View Your Results
-              </button>
-            </div>
-          )}
-          
-          {currentSection.questions && (
-            <div>
-              {currentSection.questions.map(question => renderQuestion(question))}
-            </div>
-          )}
-          
-          {(currentSection.type !== 'completion') && (
-            <div className="flex justify-between mt-8">
-              <button
-                type="button"
-                className="btn btn-outline"
-                onClick={handlePrevious}
-                disabled={currentSectionIndex === 0}
-              >
-                <ArrowLeft className="h-4 w-4 mr-2" />
-                Previous
-              </button>
-              <button
-                type="button"
-                className="btn btn-primary"
-                onClick={handleNext}
-                disabled={!isCurrentSectionComplete()}
-              >
-                {currentSectionIndex === ASSESSMENT_SECTIONS[language].length - 2 ? 'Complete' : 'Next'}
-                <ArrowRight className="h-4 w-4 ml-2" />
-              </button>
-            </div>
-          )}
-        </div>
-      </CardContent>
-    </Card>
+    </div>
   );
 };
 
-export default Assessment;
+export default MedicalAssessment;
